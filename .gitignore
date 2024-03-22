@@ -1,0 +1,4 @@
+/target
+local_env.sh
+templator.toml
+/templates
