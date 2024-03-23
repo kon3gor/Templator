@@ -1,10 +1,10 @@
 mod api;
 mod cli;
+mod composite;
 mod error;
 mod local;
-mod retriever;
 
-use error::MyError;
+use error::TemplatorError;
 use serde::Deserialize;
 use std::env::VarError;
 use std::io::stdin;
@@ -15,7 +15,7 @@ use termion::input::TermRead;
 
 use crate::api::TemplateSource;
 use crate::cli::CliController;
-use crate::retriever::TemplateRetriever;
+use crate::composite::CompositeSource;
 
 const SETTINGS_ENV_VAR: &'static str = "TEMPLATOR_SETTINGS";
 const HOME_ENV_VAR: &'static str = "HOME";
@@ -37,12 +37,12 @@ pub struct Settings {
     pub storage_type: StorageType,
 }
 
-fn main() -> Result<(), MyError> {
+fn main() -> Result<(), TemplatorError> {
     let settings = get_settings()?;
     let cwd = env::current_dir()?;
 
-    let retriever = TemplateRetriever::new(cwd, settings);
-    let choices = retriever.get_choices().into_boxed_slice();
+    let retriever = CompositeSource::new(cwd, settings);
+    let choices = retriever.get_choices()?.into_boxed_slice();
     let cnt = choices.len();
 
     let mut selected: usize = 0;
@@ -90,14 +90,16 @@ fn main() -> Result<(), MyError> {
     }
 
     cli.move_down(cnt - selected);
-    let selected_choice = choices.get(selected).ok_or(MyError::new())?;
+    let selected_choice = choices
+        .get(selected)
+        .ok_or(TemplatorError::from("Index out of bounds"))?;
     cli.print(format!(
         "You have selected: {}\r\n",
         selected_choice.clone()
     ));
     cli.flush();
 
-    retriever.load_choice(selected_choice.clone());
+    retriever.load_choice(selected_choice.clone())?;
 
     return Ok(());
 }
@@ -112,10 +114,10 @@ fn get_settings_location() -> Result<PathBuf, VarError> {
     return Ok(PathBuf::from(home_env).join(DEFAULT_LOCATION));
 }
 
-fn get_settings() -> Result<Settings, MyError> {
+fn get_settings() -> Result<Settings, TemplatorError> {
     let location = get_settings_location()?;
     let content = fs::read_to_string(location)?;
-    return toml::from_str(&content).map_err(MyError::from);
+    return toml::from_str(&content).map_err(TemplatorError::from);
 }
 
 fn draw_choices(cli: &mut CliController, choices: &[String], selected: usize) {

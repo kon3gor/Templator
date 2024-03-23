@@ -4,36 +4,44 @@ use std::fmt::Display;
 use std::io;
 
 #[derive(Debug)]
-pub struct MyError {}
+pub struct TemplatorError {
+    msg: String,
+}
 
-impl MyError {
-    pub fn new() -> Self {
-        Self {}
+impl TemplatorError {
+    pub fn new(msg: String) -> Self {
+        Self { msg }
     }
 }
 
-impl Display for MyError {
+impl Display for TemplatorError {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "my error occured")
+        write!(f, "{}", self.msg)
     }
 }
 
-impl Error for MyError {}
+impl Error for TemplatorError {}
 
-impl From<toml::de::Error> for MyError {
+impl From<toml::de::Error> for TemplatorError {
     fn from(value: toml::de::Error) -> Self {
-        return MyError::new();
+        return TemplatorError::new(value.to_string());
     }
 }
 
-impl From<io::Error> for MyError {
+impl From<io::Error> for TemplatorError {
     fn from(value: io::Error) -> Self {
-        return MyError::new();
+        return TemplatorError::new(value.to_string());
     }
 }
 
-impl From<VarError> for MyError {
+impl From<VarError> for TemplatorError {
     fn from(value: VarError) -> Self {
-        return MyError::new();
+        return TemplatorError::new(value.to_string());
+    }
+}
+
+impl From<&'static str> for TemplatorError {
+    fn from(value: &'static str) -> Self {
+        return TemplatorError::new(value.to_string());
     }
 }

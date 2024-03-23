@@ -3,7 +3,7 @@ use std::{
     path::{Path, PathBuf},
 };
 
-use crate::api::TemplateSource;
+use crate::api::{TemplateSource, TemplatorResult};
 
 pub struct LocalSource {
     uri: String,
@@ -18,29 +18,26 @@ impl LocalSource {
 }
 
 impl TemplateSource for LocalSource {
-    fn get_choices(&self) -> Vec<String> {
-        let entries = fs::read_dir(self.uri.clone()).unwrap();
+    fn get_choices(&self) -> TemplatorResult<Vec<String>> {
+        let entries = fs::read_dir(&self.uri)?;
         let dirs = entries
-            .map(|x| x.ok())
-            .filter_map(|x| {
-                if let Some(entry) = x {
-                    if entry.metadata().unwrap().is_dir() {
-                        return Some(entry.file_name().to_str().unwrap().to_string());
-                    } else {
-                        return None;
-                    }
+            .filter_map(|x| x.ok())
+            .filter_map(|entry| {
+                let ty = entry.file_type().ok()?;
+                if ty.is_dir() {
+                    return Some(entry.file_name().into_string().ok()?);
                 } else {
                     return None;
-                };
+                }
             })
             .collect();
-        return dirs;
+        return Ok(dirs);
     }
 
-    fn load_choice(&self, choice: String) -> bool {
-        let path_to_clone = PathBuf::from(self.uri.clone()).join(choice.clone());
-        copy_dir_all(path_to_clone, self.target.clone().join(choice.clone())).unwrap();
-        return true;
+    fn load_choice(&self, choice: String) -> TemplatorResult<()> {
+        let path_to_clone = PathBuf::from(&self.uri).join(&choice);
+        copy_dir_all(path_to_clone, self.target.join(&choice))?;
+        return Ok(());
     }
 }
 
