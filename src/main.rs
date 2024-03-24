@@ -3,6 +3,7 @@ mod cli;
 mod composite;
 mod error;
 mod local;
+mod github;
 
 use error::TemplatorError;
 use serde::Deserialize;

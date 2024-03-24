@@ -45,3 +45,9 @@ impl From<&'static str> for TemplatorError {
         return TemplatorError::new(value.to_string());
     }
 }
+
+impl From<octocrab::Error> for TemplatorError {
+    fn from(value: octocrab::Error) -> Self {
+        return TemplatorError::new(value.to_string());
+    }
+}
