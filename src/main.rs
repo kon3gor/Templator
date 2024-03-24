@@ -2,8 +2,8 @@ mod api;
 mod cli;
 mod composite;
 mod error;
-mod local;
 mod github;
+mod local;
 
 use error::TemplatorError;
 use serde::Deserialize;
@@ -41,6 +41,7 @@ pub struct Settings {
 fn main() -> Result<(), TemplatorError> {
     let settings = get_settings()?;
     let cwd = env::current_dir()?;
+    let args: Vec<String> = env::args().collect();
 
     let retriever = CompositeSource::new(cwd, settings);
     let choices = retriever.get_choices()?.into_boxed_slice();
@@ -100,7 +101,7 @@ fn main() -> Result<(), TemplatorError> {
     ));
     cli.flush();
 
-    retriever.load_choice(selected_choice.clone())?;
+    retriever.load_choice(selected_choice.clone(), args.get(1).cloned())?;
 
     return Ok(());
 }

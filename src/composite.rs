@@ -26,7 +26,7 @@ impl TemplateSource for CompositeSource {
         return self.source.get_choices();
     }
 
-    fn load_choice(&self, choice: String) -> TemplatorResult<()> {
-        return self.source.load_choice(choice);
+    fn load_choice(&self, choice: String, name: Option<String>) -> TemplatorResult<()> {
+        return self.source.load_choice(choice, name);
     }
 }

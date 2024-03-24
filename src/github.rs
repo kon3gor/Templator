@@ -37,6 +37,8 @@ impl GithubSource {
         Ok(dirs)
     }
 
+    // maybe create a snapshot in /tmp directory with all the contents of the repo?
+    // then here I can just copy specified directory from /tmp/{repo} and live a long happy life
     async fn load_directory_from_git(&self, directory: String) -> TemplatorResult<()> {
         todo!("Not yet implemented")
     }
@@ -48,7 +50,7 @@ impl TemplateSource for GithubSource {
         return Ok(result);
     }
 
-    fn load_choice(&self, choice: String) -> crate::api::TemplatorResult<()> {
+    fn load_choice(&self, choice: String, name: Option<String>) -> crate::api::TemplatorResult<()> {
         Ok(self.rt.block_on(self.load_directory_from_git(choice))?)
     }
 }

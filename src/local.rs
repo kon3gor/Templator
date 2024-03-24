@@ -34,9 +34,10 @@ impl TemplateSource for LocalSource {
         return Ok(dirs);
     }
 
-    fn load_choice(&self, choice: String) -> TemplatorResult<()> {
+    fn load_choice(&self, choice: String, name: Option<String>) -> TemplatorResult<()> {
         let path_to_clone = PathBuf::from(&self.uri).join(&choice);
-        copy_dir_all(path_to_clone, self.target.join(&choice))?;
+        let target_name = name.unwrap_or(choice);
+        copy_dir_all(path_to_clone, self.target.join(&target_name))?;
         return Ok(());
     }
 }
