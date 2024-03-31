@@ -1,5 +1,6 @@
 mod api;
 mod cli;
+mod cmd;
 mod composite;
 mod error;
 mod github;
@@ -8,15 +9,8 @@ mod local;
 use error::TemplatorError;
 use serde::Deserialize;
 use std::env::VarError;
-use std::io::stdin;
 use std::path::PathBuf;
-use std::{env, fs, usize};
-use termion::event::Key;
-use termion::input::TermRead;
-
-use crate::api::TemplateSource;
-use crate::cli::CliController;
-use crate::composite::CompositeSource;
+use std::{env, fs};
 
 const SETTINGS_ENV_VAR: &'static str = "TEMPLATOR_SETTINGS";
 const HOME_ENV_VAR: &'static str = "HOME";
@@ -40,70 +34,7 @@ pub struct Settings {
 
 fn main() -> Result<(), TemplatorError> {
     let settings = get_settings()?;
-    let cwd = env::current_dir()?;
-    let args: Vec<String> = env::args().collect();
-
-    let retriever = CompositeSource::new(cwd, settings);
-    let choices = retriever.get_choices()?.into_boxed_slice();
-    let cnt = choices.len();
-
-    let mut selected: usize = 0;
-    let mut cli = CliController::new();
-
-    draw_choices(&mut cli, &choices, selected);
-    cli.move_up(cnt);
-
-    let stdin = stdin();
-    let mut exit = false;
-    for c in stdin.keys() {
-        match c? {
-            Key::Char('j') => {
-                if selected == cnt - 1 {
-                    continue;
-                }
-                cli.move_up(selected);
-                selected += 1;
-                draw_choices(&mut cli, &choices, selected);
-                cli.move_up(cnt - selected);
-            }
-            Key::Char('k') => {
-                if selected == 0 {
-                    continue;
-                }
-                cli.move_up(selected);
-                selected -= 1;
-                draw_choices(&mut cli, &choices, selected);
-                cli.move_up(cnt - selected);
-            }
-            Key::Char('\n') => break,
-            Key::Char('q') => {
-                //todo: Add help message with this shit
-                exit = true;
-                break;
-            }
-            _ => (),
-        }
-
-        cli.flush();
-    }
-
-    if exit {
-        return Ok(());
-    }
-
-    cli.move_down(cnt - selected);
-    let selected_choice = choices
-        .get(selected)
-        .ok_or(TemplatorError::from("Index out of bounds"))?;
-    cli.print(format!(
-        "You have selected: {}\r\n",
-        selected_choice.clone()
-    ));
-    cli.flush();
-
-    retriever.load_choice(selected_choice.clone(), args.get(1).cloned())?;
-
-    return Ok(());
+    return crate::cmd::api::process_args(settings);
 }
 
 fn get_settings_location() -> Result<PathBuf, VarError> {
@@ -120,16 +51,4 @@ fn get_settings() -> Result<Settings, TemplatorError> {
     let location = get_settings_location()?;
     let content = fs::read_to_string(location)?;
     return toml::from_str(&content).map_err(TemplatorError::from);
-}
-
-fn draw_choices(cli: &mut CliController, choices: &[String], selected: usize) {
-    for pair in choices.iter().enumerate() {
-        cli.clear_line();
-        let choice = pair.1;
-        if pair.0 == selected {
-            cli.print(format!("> {}\r\n", choice));
-        } else {
-            cli.print(format!("{}\r\n", choice));
-        }
-    }
 }

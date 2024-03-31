@@ -15,7 +15,7 @@ impl GithubSource {
         let (user, repo) = uri.split_once('/').unzip();
         let rt = Builder::new_current_thread().enable_all().build().unwrap();
         Self {
-            rt: rt,
+            rt,
             user: user.unwrap().to_string(),
             repo: repo.unwrap().to_string(),
         }
